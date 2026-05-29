@@ -31,4 +31,36 @@ router.post('/register', async (req,res) =>{
     }
 })
 
+router.post('/login', async(req, res) => {
+    const email = req.body.email;
+    const password = req.body.password;
+
+    try{
+        if(!email || !password){
+            return res.status(400).json({message: "Email and Password are required!"});
+        }
+
+        let userExists = await User.findOne({email:email});
+        if(!userExists){
+            return res.status(400).json({message: "Invalid email or password!"});
+        }
+
+        const correctPassword = await bcrypt.compare(password, userExists.password);
+        if(!correctPassword){
+            return res.status(400).json({message: "Invalid email or password!"});  
+        }
+
+        const token = jwt.sign({
+            email: userExists.email}, 
+            process.env.JWT_SECRET, 
+            {expiresIn: '1h'});
+
+        res.status(200).json({message: "Login successful!", token: token});
+    } catch(error){
+        console.error("Error during login:", error);
+        res.status(500).json({message: "Server error during login!"
+        })
+    }
+})
+
 module.exports = router;
